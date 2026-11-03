@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>待出发 · 完整方案 — AI Native 时代，重新想象携程</title>
+<style>
+  :root{
+    --blue:#2577E3; --blue-d:#1B62C0; --blue-l:#5AA0FF;
+    --grad:linear-gradient(120deg,#3D8BFF,#6A5CFF);
+    --ink:#101C2E; --sub:#5B6B82; --faint:#8494A8; --line:#E7EEF8;
+    --orange:#FF5000; --green:#0FA968; --amber:#B45309;
+    --bg:#F7F9FD; --shadow-s:0 2px 10px rgba(23,48,84,.05);
+    --shadow-m:0 12px 34px rgba(23,48,84,.09);
+    --shadow-l:0 28px 70px rgba(20,44,86,.16);
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; scroll-padding-top:84px; }
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased; line-height:1.78;
+  }
+  a{ color:inherit; text-decoration:none; }
+  .wrap{ max-width:880px; margin:0 auto; padding:0 26px; }
+
+  /* 阅读进度条 */
+  .progress{ position:fixed; top:0; left:0; height:3px; width:0; background:var(--grad); z-index:200; border-radius:0 3px 3px 0; }
+
+  /* 顶部导航 */
+  .nav{ position:sticky; top:0; z-index:120; backdrop-filter:blur(14px); background:rgba(255,255,255,.82); border-bottom:1px solid rgba(231,238,248,.95); }
+  .nav .inner{ max-width:1160px; margin:0 auto; padding:0 26px; height:62px; display:flex; align-items:center; justify-content:space-between; gap:14px; }
+  .back{ display:inline-flex; align-items:center; gap:7px; font-size:13.5px; font-weight:650; color:var(--sub); transition:.2s; }
+  .back:hover{ color:var(--blue-d); }
+  .nav-title{ font-size:14px; font-weight:800; letter-spacing:.02em; }
+  .nav-title em{ font-style:normal; color:var(--blue-d); }
+  .nav-cta{
+    display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#fff;
+    background:var(--grad); padding:8px 17px; border-radius:99px;
+    box-shadow:0 6px 18px rgba(61,139,255,.35); transition:.2s;
+  }
+  .nav-cta:hover{ transform:translateY(-1px); box-shadow:0 10px 26px rgba(61,139,255,.45); }
+
+  /* ---------- 文档头部 ---------- */
+  .doc-hero{ position:relative; overflow:hidden; padding:70px 0 56px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#EDF4FF 0%,var(--bg) 92%); }
+  .doc-hero::before{ content:""; position:absolute; width:520px; height:520px; right:-180px; top:-240px; border-radius:50%; background:radial-gradient(circle,rgba(90,160,255,.26),transparent 68%); }
+  .doc-hero .wrap{ position:relative; }
+  .kicker{ font-size:12px; font-weight:800; letter-spacing:.16em; color:var(--blue); text-transform:uppercase; }
+  .doc-hero h1{ font-size:clamp(28px,4.4vw,42px); letter-spacing:-.02em; line-height:1.3; font-weight:830; margin:14px 0 20px; }
+  .doc-hero h1 em{ font-style:normal; background:linear-gradient(100deg,#1B62C0,#6A5CFF); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hero-quote{
+    background:#fff; border:1px solid #E4EEFA; border-radius:18px; padding:22px 26px;
+    box-shadow:var(--shadow-m); font-size:15.5px; line-height:1.85;
+  }
+  .hero-quote b{ color:var(--blue-d); }
+  .hero-quote .motto{ margin-top:12px; padding-top:12px; border-top:1px dashed #DCE7F5; font-weight:750; color:#33445C; font-size:14.5px; }
+
+  /* ---------- 正文布局 ---------- */
+  .layout{ max-width:1160px; margin:0 auto; padding:0 26px; display:grid; grid-template-columns:210px minmax(0,1fr); gap:56px; align-items:start; }
+  .toc{ position:sticky; top:92px; padding:34px 0 60px; }
+  .toc .t{ font-size:11.5px; font-weight:800; letter-spacing:.14em; color:var(--faint); margin-bottom:14px; }
+  .toc a{
+    display:block; font-size:13.5px; color:var(--sub); padding:7px 12px; border-radius:9px;
+    border-left:2px solid transparent; margin-left:-2px; transition:.18s; font-weight:600;
+  }
+  .toc a:hover{ color:var(--blue-d); background:#EEF5FF; }
+  .toc a.on{ color:var(--blue-d); background:#E7F1FF; border-left-color:var(--blue); }
+  .toc a.demo{ margin-top:16px; color:#fff; background:var(--grad); text-align:center; border-radius:99px; padding:10px 12px; box-shadow:0 8px 20px rgba(61,139,255,.32); border-left:none; margin-left:0; }
+  .toc a.demo:hover{ transform:translateY(-1px); }
+
+  article{ padding:14px 0 30px; min-width:0; }
+
+  /* 章节 */
+  section.sec{ padding:44px 0 8px; border-top:1px dashed #E2EAF5; margin-top:36px; }
+  section.sec:first-child{ border-top:none; margin-top:0; }
+  .sec-no{ font-size:12px; font-weight:800; letter-spacing:.16em; color:var(--blue); }
+  .sec h2{ font-size:clamp(22px,2.8vw,28px); letter-spacing:-.02em; font-weight:820; margin:8px 0 18px; line-height:1.4; }
+  h3{ font-size:18px; font-weight:780; margin:34px 0 12px; letter-spacing:-.01em; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  h3 .idx{ font-size:12px; font-weight:800; color:#A9BAD0; letter-spacing:.06em; flex:none; }
+  p{ font-size:15px; color:#37465C; margin:12px 0; }
+  p b, li b{ color:var(--ink); font-weight:700; }
+  ul,ol{ margin:12px 0 12px 20px; }
+  li{ font-size:14.6px; color:#37465C; margin:7px 0; }
+  li::marker{ color:var(--blue); font-weight:700; }
+  hr.soft{ border:none; border-top:1px dashed #E2EAF5; margin:36px 0 0; }
+
+  /* 引用块 / 提示框 */
+  .callout{
+    border-radius:14px; padding:16px 20px; margin:18px 0; font-size:14.6px; line-height:1.8;
+    background:#F4F9FF; border:1px solid #DFEBFB; color:#2C3E57;
+  }
+  .callout.warn{ background:#FFF8F3; border-color:#FBE3D2; color:#5A3A20; }
+  .callout.key{ background:linear-gradient(100deg,#0E2A4C,#17468C); border:none; color:#DCE9FA; }
+  .callout.key b{ color:#fff; }
+  .callout .lab{ display:block; font-size:11px; font-weight:800; letter-spacing:.12em; margin-bottom:6px; opacity:.65; }
+  .callout p{ margin:0; color:inherit; }
+  .callout p + p{ margin-top:8px; }
+
+  /* 链路图 */
+  .chain{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:18px 0;
+    background:#fff; border:1px solid #E4EEFA; border-radius:16px; padding:18px 20px;
+    box-shadow:var(--shadow-s); font-size:13.8px; font-weight:650; color:#54657B;
+  }
+  .chain .node{ background:#F2F7FE; border:1px solid #DFEAF9; color:#2C4A76; border-radius:99px; padding:7px 15px; }
+  .chain .node.hot{ background:linear-gradient(100deg,#1B62C0,#3D8BFF); color:#fff; border:none; box-shadow:0 6px 16px rgba(37,119,227,.3); }
+  .chain .arr{ color:#A9BAD0; font-weight:800; }
+  .chain .gap-tag{ font-size:11px; font-weight:800; color:var(--orange); background:#FFF1E8; border:1px dashed #FFC9A8; border-radius:8px; padding:4px 10px; }
+
+  /* 生命周期 */
+  .lifecycle{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:18px 0; }
+  .lifecycle .st{ background:#fff; border:1px solid #E0EAF7; border-radius:11px; padding:9px 15px; font-size:13.5px; font-weight:700; color:#3E5375; box-shadow:var(--shadow-s); }
+  .lifecycle .st.lit{ background:linear-gradient(100deg,#1B62C0,#3D8BFF); color:#fff; border:none; }
+  .lifecycle .ar{ color:#B7C6DA; font-weight:800; }
+  .lifecycle-cap{ font-size:12.5px; color:#8A99AC; }
+
+  /* 表格 */
+  .table-wrap{ background:#fff; border:1px solid #EDF2FA; border-radius:16px; box-shadow:var(--shadow-s); overflow:hidden; margin:18px 0; }
+  .table-scroll{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; font-size:13.8px; }
+  th,td{ padding:13px 18px; text-align:left; border-bottom:1px solid #F1F5FB; vertical-align:top; line-height:1.7; }
+  thead th{ font-size:12.5px; color:#8A99AC; font-weight:750; letter-spacing:.03em; background:#FAFCFF; white-space:nowrap; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover td{ background:#FBFDFF; }
+  td b{ color:var(--ink); }
+  .tbl-cap{ font-size:12px; color:#8A99AC; font-weight:700; margin:20px 0 8px; letter-spacing:.05em; }
+
+  /* 四步卡 */
+  .steps4{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin:18px 0; }
+  .step4{ background:#fff; border:1px solid #EDF2FA; border-radius:16px; padding:20px 22px; box-shadow:var(--shadow-s); }
+  .step4 .h{ display:flex; align-items:center; gap:10px; font-weight:780; font-size:15.5px; }
+  .step4 .h .c{ width:26px; height:26px; border-radius:8px; background:#EAF3FF; color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:13px; flex:none; }
+  .step4 .h .en{ font-size:10.5px; color:#A9BAD0; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+  .step4 p{ margin:10px 0 0; font-size:13.8px; }
+
+  /* Demo 嵌入 */
+  .demo-box{
+    margin:26px 0; border-radius:24px; overflow:hidden; position:relative;
+    background:linear-gradient(140deg,#0B2440,#17468C 70%,#1E5FBF);
+    padding:34px 20px 30px; box-shadow:0 24px 60px rgba(14,42,80,.3);
+  }
+  .demo-box .cap{ text-align:center; color:#BFD8F7; font-size:13px; font-weight:700; letter-spacing:.06em; margin-bottom:20px; }
+  .demo-box .cap b{ color:#fff; font-size:14.5px; letter-spacing:.02em; }
+  .phone-holder{
+    width:354px; height:708px; margin:0 auto; overflow:hidden; border-radius:32px;
+    box-shadow:0 20px 50px rgba(0,0,0,.45); background:#E9EDF3; position:relative;
+  }
+  .phone-holder iframe{ width:390px; height:780px; border:0; transform:scale(.908); transform-origin:top left; display:block; }
+  .demo-box .foot{ display:flex; justify-content:center; margin-top:22px; }
+  .demo-box .open-btn{
+    display:inline-flex; align-items:center; gap:8px; color:#fff; font-size:13.5px; font-weight:700;
+    border:1.5px solid rgba(255,255,255,.4); border-radius:99px; padding:9px 22px; transition:.2s; background:rgba(255,255,255,.08);
+  }
+  .demo-box .open-btn:hover{ background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.65); }
+
+  /* 权重条 */
+  .bars{ background:#fff; border:1px solid #EDF2FA; border-radius:16px; box-shadow:var(--shadow-s); padding:22px 24px; margin:18px 0; display:flex; flex-direction:column; gap:16px; }
+  .bar-row .lab{ display:flex; justify-content:space-between; font-size:13px; font-weight:650; margin-bottom:6px; gap:10px; flex-wrap:wrap; }
+  .bar-row .lab span:last-child{ color:var(--blue); }
+  .track{ height:8px; border-radius:99px; background:#EEF3FA; overflow:hidden; }
+  .fill{ height:100%; border-radius:99px; background:var(--grad); }
+
+  /* 归档四产物 */
+  .prod4{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:18px 0; }
+  .prod{ background:#fff; border:1px solid #EDF2FA; border-radius:14px; padding:16px 16px; box-shadow:var(--shadow-s); }
+  .prod .n{ font-size:13px; font-weight:800; color:var(--blue-d); }
+  .prod p{ font-size:12.6px; color:var(--sub); margin:6px 0 0; line-height:1.65; }
+
+  /* 备选方案卡 */
+  .alt3{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:18px 0; }
+  .alt{ background:#fff; border:1px solid #EDF2FA; border-radius:16px; padding:20px; box-shadow:var(--shadow-s); }
+  .alt .lt{ display:inline-block; font-size:11px; font-weight:800; letter-spacing:.1em; color:var(--blue-d); background:#EAF3FF; border-radius:7px; padding:3px 9px; margin-bottom:10px; }
+  .alt .h{ font-size:15.5px; font-weight:780; }
+  .alt p{ font-size:13.4px; margin:8px 0 0; }
+
+  .ending{ margin:46px 0 20px; background:linear-gradient(120deg,#0B2440,#133E77 60%,#1E5FBF); border-radius:22px; padding:34px 34px; color:#fff; box-shadow:0 22px 50px rgba(14,42,80,.26); }
+  .ending p{ color:#C4D9F5; font-size:15px; margin:0; }
+  .ending .fin{ margin-top:14px; font-size:19px; font-weight:820; letter-spacing:.01em; color:#fff; }
+  .ending .fin em{ font-style:normal; color:#8FC2FF; }
+
+  .appendix{ font-size:12.8px; color:#93A3B8; margin:30px 0 60px; }
+
+  /* 响应式 */
+  @media (max-width:1080px){
+    .layout{ grid-template-columns:minmax(0,1fr); }
+    .toc{ display:none; }
+  }
+  @media (max-width:720px){
+    .steps4{ grid-template-columns:1fr; }
+    .prod4,.alt3{ grid-template-columns:1fr 1fr; }
+    .phone-holder{ width:340px; height:680px; }
+    .phone-holder iframe{ transform:scale(.872); }
+    .doc-hero{ padding:52px 0 40px; }
+    .ending{ padding:26px 22px; }
+  }
+  @media (max-width:480px){
+    .prod4,.alt3{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<header class="nav">
+  <div class="inner">
+    <a class="back" href="index.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      返回首页
+    </a>
+    <div class="nav-title">待出发 · <em>完整方案</em></div>
+    <a class="nav-cta" href="demo/index.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7Z" fill="currentColor"/></svg>
+      体验 Demo
+    </a>
+  </div>
+</header>
+
+<div class="doc-hero">
+  <div class="wrap">
+    <div class="kicker">Full Proposal</div>
+    <h1>待出发 <em>——</em> AI Native 时代，<br>重新想象携程</h1>
+    <div class="hero-quote">
+      在携程「行程」Tab 中新增 <b>「待出发」</b>——一个"活的"愿望单。用户把"想去"随时存进来，AI 持续帮忙盯价格、算时机，时机成熟一键成行；行程结束后自动归档成足迹与手记，成为下一次许愿的燃料。
+      <div class="motto">"购物车收藏的是货，「待出发」收藏的是一场还没发生的旅行。"</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- 目录 -->
+  <aside class="toc" id="toc">
+    <div class="t">目录</div>
+    <a href="#s1" data-sec="s1">01 · 用户需求</a>
+    <a href="#s2" data-sec="s2">02 · 产品创新</a>
+    <a href="#s3" data-sec="s3">03 · 迭代路线</a>
+    <a href="#s4" data-sec="s4">04 · 效果验证</a>
+    <a href="#s5" data-sec="s5">05 · 备选方案</a>
+    <a href="#s6" data-sec="s6">06 · 风险与边界</a>
+    <a href="#s7" data-sec="s7">07 · 结语</a>
+    <a class="demo" href="demo/index.html">打开 Demo 原型</a>
+  </aside>
+
+  <article>
+
+  <!-- ================= 01 ================= -->
+  <section class="sec" id="s1">
+    <div class="sec-no">SECTION 01</div>
+    <h2>用户需求：年轻人不是不想旅行，是"决策成本 &gt; 旅行收益"</h2>
+
+    <h3><span class="idx">1.1</span>年轻人的旅行决策真相</h3>
+    <p>年轻人获取旅行灵感的方式已经迁移：小红书刷攻略、抖音看视频、问豆包 / DeepSeek"五一去哪"。但<b>灵感平台解决不了执行</b>——种草之后，用户要自己拼行程、比价、算假期、查余票、订票订房，每一步都是摩擦。</p>
+    <div class="chain">
+      <span class="node">小红书 / 抖音（灵感，0 成本）</span>
+      <span class="arr">→</span>
+      <span class="gap-tag">断层</span>
+      <span class="arr">→</span>
+      <span class="node hot">携程（执行，高摩擦，只在临门一脚出现）</span>
+    </div>
+    <p>携程在这个链路里被管道化为"收银台"：<b>用户只在"已经决定要去"的那一刻才打开它</b>。这不是体验问题，是入口问题——携程缺席了决策周期里最长的那一段。</p>
+
+    <h3><span class="idx">1.2</span>被浪费的"期待期"：出发前 300 天</h3>
+    <p>一次典型的出境旅行，决策周期约为 1~6 个月。<b>旅行的快乐有一半发生在出发之前</b>——刷攻略、收藏、比价、跟朋友念叨，这种"期待感"本身是高频、高情绪价值的行为。</p>
+    <p>但 OTA 只在出发前 3 天（用户下单后）才开始服务用户，<b>前面 300 天的期待期基本空置</b>，而这 300 天恰恰是年轻人在内容平台上最活跃的时候。</p>
+    <div class="callout key"><span class="lab">KEY INSIGHT</span><p>谁占据期待期，谁就占据决策入口。</p></div>
+
+    <h3><span class="idx">1.3</span>行程 Tab 的"中间空白"</h3>
+    <p>携程「行程」Tab 已有相当完整的能力：AI 行程助手与线路规划、旅游地图、攻略与灵感内容。但仔细拆解会发现，这些模块服务的都是两类状态：<b>"已决定"的状态</b>（AI 规划线路、创建行程、管理出行）与<b>"别人的内容"</b>（攻略、灵感、榜单）。</p>
+    <p>而介于两者之间、最长久的状态——<b>"想去，但还没决定"</b>——在这个页面里没有承载。用户刷完攻略被种草后，那颗"想去"的种子只能流向小红书收藏夹或微信备忘录，携程就此退出视野，直到某天用户自己想起来。</p>
+    <div class="lifecycle">
+      <span class="st lit">想去</span><span class="ar">→</span>
+      <span class="st">在计划</span><span class="ar">→</span>
+      <span class="st">已预订</span><span class="ar">→</span>
+      <span class="st">在路上</span><span class="ar">→</span>
+      <span class="st">回来沉淀</span>
+    </div>
+    <div class="lifecycle-cap">↑ 旅行完整生命周期 ·「想去」到「在计划」之间，是现有行程页覆盖不到的"未决状态"</div>
+    <div class="callout"><span class="lab">结论</span><p>行程页缺的不是又一个规划工具，而是一个安放"未决愿望"的位置。</p></div>
+
+    <h3><span class="idx">1.4</span>目标用户与核心场景</h3>
+    <p><b>目标用户</b>：20~30 岁城市青年，特征是——</p>
+    <ul>
+      <li>有强烈出行意愿但<b>时间与预算双重受限</b>（"想去的地方清单比年假多"）</li>
+      <li>决策依赖内容平台，习惯"先种草、后执行"</li>
+      <li>对价格敏感，愿意为"划算"付出注意力（捡漏、蹲票、凑满减）</li>
+      <li>独居 / 独行者比例高，旅行是重要的情绪出口与社交货币</li>
+    </ul>
+    <p><b>核心场景</b>，分别对应本方案的三个核心机制：</p>
+    <ol>
+      <li><b>许愿暂存</b>——深夜刷到冰岛极光视频，热血上头，但查完机票要 8000+，默默退出，"总有一天要去"</li>
+      <li><b>时机提醒</b>——马上小长假，不知道去哪，翻遍收藏夹还是纠结到假期结束</li>
+      <li><b>归档沉淀</b>——旅行回来，照片散落在相册里，三个月后再也没打开过</li>
+    </ol>
+  </section>
+
+  <!-- ================= 02 ================= -->
+  <section class="sec" id="s2">
+    <div class="sec-no">SECTION 02</div>
+    <h2>产品创新：「待出发」——一个"活的"愿望单</h2>
+
+    <h3><span class="idx">2.1</span>定位</h3>
+    <p>「待出发」不是购物车，也不是收藏夹：</p>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>概念</th><th>含义</th><th>问题</th></tr></thead>
+      <tbody>
+        <tr><td><b>购物车</b></td><td>已决定要买，只等结算</td><td>交易导向，解决不了"无需求时打开"</td></tr>
+        <tr><td><b>传统愿望单 / 收藏夹</b></td><td>想要，先存着</td><td>静态，存完即死，变成"电子坟场"</td></tr>
+        <tr><td><b>待出发</b></td><td colspan="2"><b>收藏"一场还没发生的旅行"，且这张卡是活的</b></td></tr>
+      </tbody>
+    </table></div></div>
+    <p><b>"活"体现在：每张愿望卡都会自己算时机、自己变方案、自己找你。</b>传统收藏夹是名词，待出发是动词。</p>
+    <p>本方案的设计原则只有一条：<b>只做内容平台做不到的事</b>——用携程独占的实时库存与价格、真实交易数据、履约服务能力，去服务那段最长的"期待期"。</p>
+
+    <h3><span class="idx">2.2</span>与 AI 行程助手的关系：上游意图池，不是第二个助手</h3>
+    <p>携程已有 AI 行程助手（会话式规划）。「待出发」<b>不是它的竞品或重复建设</b>，两者是上下游协作关系：</p>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>维度</th><th>AI 行程助手</th><th>待出发</th></tr></thead>
+      <tbody>
+        <tr><td>承接的意图</td><td><b>明确</b>："我要去齐齐哈尔，帮我规划"</td><td><b>模糊</b>："我想去冰岛，还没想好什么时候"</td></tr>
+        <tr><td>交互模式</td><td>Pull：用户主动发起会话</td><td>Push：AI 持续监测、主动触发</td></tr>
+        <tr><td>时间跨度</td><td>一次会话，用完即走</td><td>数周 ~ 数月的持续陪伴</td></tr>
+        <tr><td>状态</td><td>无状态，每次重新开始</td><td>有状态：愿望卡的价格与时机每日更新</td></tr>
+        <tr><td>回答的问题</td><td>"这趟怎么玩"</td><td>"什么时候该去、现在值不值得订"</td></tr>
+        <tr><td>输出</td><td>行程线路（内容）</td><td>时机信号 → 可执行方案 → 交易</td></tr>
+      </tbody>
+    </table></div></div>
+    <p>愿望卡在「待出发」中成熟后，自动调用 AI 行程助手生成线路与预订方案，一键下单。<b>「待出发」为行程助手持续供给高意图用户</b>——今天用户不打开行程助手，是因为还没决定去哪；「待出发」负责让"还没决定"这件事也留在携程里。</p>
+
+    <h3><span class="idx">2.3</span>四步闭环</h3>
+    <div class="steps4">
+      <div class="step4"><div class="h"><span class="c">1</span>许愿 <span class="en">Capture</span></div>
+        <p>一句话 / 一张截图 / 一条小红书或抖音链接 / 一段语音。AI 自动解析并补全：目的地、最佳出行月份、预估预算、所需假期天数、签证要求。产出一张愿望卡，<b>用户只需要说"想去"</b>——从"人找货"到"意图 → 方案"。</p></div>
+      <div class="step4"><div class="h"><span class="c">2</span>等待 <span class="en">Anticipate</span></div>
+        <p>产品的核心引擎（见 2.4 / 2.5）：AI 每天更新每张愿望卡的"入手时机"，时机成熟主动找用户。</p></div>
+      <div class="step4"><div class="h"><span class="c">3</span>出发 <span class="en">Act</span></div>
+        <p>时机成熟 → 自动调用 AI 行程助手，把愿望卡变成可执行行程（航班 + 酒店 + 门票 + 每日路线）。下单复用携程现有交易链路，不自建。</p></div>
+      <div class="step4"><div class="h"><span class="c">4</span>回来 <span class="en">Archive</span></div>
+        <p>自动归档成旅行记忆，成为下一次许愿的燃料（见 2.6）。</p></div>
+    </div>
+
+    <!-- Demo 流转：页内体验 -->
+    <div class="demo-box" id="demo-box">
+      <div class="cap"><b>动手试试</b> · 可交互原型，可直接体验完整闭环（归档页为 V1.5 概念预览）</div>
+      <div class="phone-holder">
+        <iframe src="demo/index.html" title="待出发 Demo 原型" loading="lazy"></iframe>
+      </div>
+      <div class="foot">
+        <a class="open-btn" href="demo/index.html">
+          进入全屏原型体验
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M7 17 17 7M9 7h8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <h3><span class="idx">2.4</span>核心机制一：入手时机模型（Timing Score）</h3>
+    <p>"什么时候提醒"不能靠拍脑袋说"降价就推"，需要一个可计算、可解释、可迭代的模型。每张愿望卡每日计算一个 0~100 的<b>入手时机分</b>：</p>
+    <div class="bars">
+      <div class="bar-row"><div class="lab"><span><b>价格分</b> · 当前价在过去 12~36 个月价格分布中的分位（≤10% 分位 = 历史最低档，得满分）</span><span>50%</span></div><div class="track"><div class="fill" style="width:50%"></div></div></div>
+      <div class="bar-row"><div class="lab"><span><b>时间窗口分</b> · 当前日期是否落在"最佳预订窗口"内（如极光季 9—3 月，提前 4~6 个月订最划算）</span><span>20%</span></div><div class="track"><div class="fill" style="width:20%"></div></div></div>
+      <div class="bar-row"><div class="lab"><span><b>稀缺性分</b> · 余票紧张度、热门酒店剩余间数、节假日临近度</span><span>15%</span></div><div class="track"><div class="fill" style="width:15%"></div></div></div>
+      <div class="bar-row"><div class="lab"><span><b>趋势分</b> · 基于历史价格拐点判断"还会再降"还是"即将上涨"</span><span>15%</span></div><div class="track"><div class="fill" style="width:15%"></div></div></div>
+    </div>
+    <div class="tbl-cap">价格分为什么用分位而非绝对值：用户对"便宜 200 块"没概念，对"近 3 年最低"有感觉。</div>
+    <p><b>触发规则：</b></p>
+    <ul>
+      <li>综合分 ≥ 80 → 判定"时机成熟"：Push 强提醒 + 卡面挂「现在入手」标签</li>
+      <li>价格跌至历史 ≤10% 分位 → 即时 Push（用户最兴奋的时刻，不设等待）</li>
+      <li>其余情况 → 仅站内静默更新卡面数据，<b>绝不打扰</b></li>
+    </ul>
+    <div class="callout warn"><span class="lab">一个反例</span><p>用户想去 3 月的冰岛，现在 1 月机票降了 200——降幅在正常波动区间、距离最佳预订窗口还早，此时不该打扰。<b>时机 = 价格 × 窗口 × 稀缺 × 趋势的合力，不是单一降价。</b></p></div>
+    <p>产品设计思路：「待出发」的提醒本质不是"降价通知"，而是<b>帮用户抓住那个"现在不去会后悔"的瞬间</b>。比价工具卖的是信息，我们卖的是"出发的决心"。</p>
+
+    <h3><span class="idx">2.5</span>核心机制二：触达分层——Push 是惊喜，不是骚扰</h3>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>通道</th><th>角色</th><th>承载内容</th></tr></thead>
+      <tbody>
+        <tr><td><b>站内愿望卡</b>（被动）</td><td><b>每天打开的理由</b></td><td>每张卡实时显示：当前价格与历史分位、距最佳窗口天数、时机分进度条</td></tr>
+        <tr><td><b>Push</b>（主动）</td><td><b>强信号才触发</b></td><td>仅"时机成熟"判定成立时推送</td></tr>
+      </tbody>
+    </table></div></div>
+    <div class="callout warn"><span class="lab">频控铁律</span><p>单卡每周最多推送 1 次；全局每天最多 2 条；22:00—9:00 静默。年轻人一旦觉得被打扰就会关闭通知权限，产品即刻失效——<b>留存优先于触达</b>。</p></div>
+    <p>为什么这个机制能带来高频打开：类比 Steam 愿望单——玩家会天天打开看 wishlist 有没有打折，"降价"是最有效的召回。而旅行单品价格更高、决策更重、期待期更长，这个心理机制只会更强。<b>期待感 + 捡漏心理，构成了"无预订需求也打开携程"的答案。</b></p>
+
+    <h3><span class="idx">2.6</span>核心机制三：归档与足迹资产——"回来"不是终点</h3>
+    <p><b>照片从哪来：行程日期锚定，零门槛</b></p>
+    <ul>
+      <li>行程结束次日（D+1），AI 主动发起："这趟大理之行，要不要帮你生成一本旅行手记？"</li>
+      <li>用户一键授权后，系统按<b>行程日期 ±1 天缓冲</b>自动框定相册中该时段的照片（按拍摄时间戳匹配），无需用户逐张挑选</li>
+      <li><b>护城河：只有携程知道"你哪几天在旅行"</b>（航班 / 酒店 / 门票日期）。相册和网盘只知道照片的存在，不知道照片的意义</li>
+    </ul>
+    <p><b>整合成什么：四种可回味、可传播的产物</b></p>
+    <div class="prod4">
+      <div class="prod"><div class="n">旅行手记</div><p>按天自动排版，配位置、日期、当时的行程与天气，可一键微调后留存或发布</p></div>
+      <div class="prod"><div class="n">高光混剪</div><p>AI 挑选高质量照片与行程关键节点，自动生成 15 秒短片（旅行版"年度报告"）</p></div>
+      <div class="prod"><div class="n">足迹地图</div><p>把照片与轨迹钉在地图上，逐年累积成"一生足迹"</p></div>
+      <div class="prod"><div class="n">趣味总结</div><p>"这趟你走了 47 公里、去了 5 个地方、最贵的一餐是…"的数据彩蛋</p></div>
+    </div>
+    <p>为什么能持续吸引用户：核心是<b>可累积的资产</b>。"一生足迹地图"和年度旅行报告（参考 Spotify Wrapped 的传播机制）让用户为了"人生地图更完整"而反复回来。更重要的是，归档产物<b>反哺下一次许愿</b>——"你 3 年前去过洱海，现在泸沽湖机票正处于近 3 年最低"，因为 AI 懂你去过哪，推荐才可信。<b>一次旅行的沉淀，变成下一次旅行的燃料，飞轮转起来。</b></p>
+
+    <h3><span class="idx">2.7</span>信任设计：AI 说的凭什么信？</h3>
+    <p>如果用户不信"现在是最低价"，整条链路断裂。两个解法：</p>
+    <ol>
+      <li><b>透明化依据</b>：每条时机判断附可视化证据——"基于过去 36 个月 218 次报价，当前处于第 8 百分位"；"近 3 年最低"等表述统一附统计口径与免责声明，规避广告法风险</li>
+      <li><b>履约兜底承诺</b>："若预订后 30 天内同规格产品更便宜，差价返还"——<b>这一条只有携程的履约能力能兜底，小红书和豆包做不到，是实打实的护城河</b>；返还设单笔上限（如 ¥500）并审核异常订单，防黄牛套利</li>
+    </ol>
+
+    <h3><span class="idx">2.8</span>为什么必须是 AI：规则能做的，与只有 AI 能做的</h3>
+    <p>先承认质疑里成立的那一半：<b>「待出发」里凡是确定性的部分，本来就不该用 AI</b>。价格分位计算、阈值触发、频控、静默时段，用规则引擎 + 统计模型实现，可解释、可测试、成本几乎为零、还不会幻觉——V1.0 的 Timing Score 本质就是一套加权规则。<b>规则能做好的事，我们不交给模型。</b></p>
+    <p>AI 用在哪？用在规则的天敌上——<b>用户自己都说不清的模糊意图</b>。</p>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>环节</th><th>规则做法</th><th>规则的边界</th><th>AI 的做法</th></tr></thead>
+      <tbody>
+        <tr><td>许愿输入</td><td>表单：选目的地、选月份、填人数</td><td>"只是想去"的人填不出表单；要求填表 = 高摩擦，产品前提被破坏</td><td>"想去冰岛看极光"一句话、一张截图、一条链接 → 解析目的地、最佳月份、预算区间、所需假期、签证</td></tr>
+        <tr><td>目的地消歧</td><td>关键词词典 + 正则</td><td>上千目的地 × 无数种说法（"看极光""看雪""海岛躺平"），词表维护成本随覆盖面线性膨胀</td><td>语义理解 + 常识推理，长尾零成本泛化</td></tr>
+        <tr><td>方案生成</td><td>预设模板（"冰岛 5 日经典线"）</td><td>无法同时满足"预算 6000 + 只有 3 天假 + 想看极光"这类多约束组合</td><td>多约束求解 + 线路实时生成</td></tr>
+        <tr><td>提醒话术</td><td>模板变量替换</td><td>高频触达下用户一眼识破模板，情绪价值归零</td><td>因卡、因时机、因人生成不同表达</td></tr>
+        <tr><td>权重校准</td><td>人工调参</td><td>全体用户共用一套参数</td><td>按价格敏感度、假期约束、风险偏好个性化</td></tr>
+      </tbody>
+    </table></div></div>
+    <div class="callout"><span class="lab">判据</span><p>规则解决"已知的确定性问题"，AI 解决"未知的模糊性问题"。而这个产品的立身之本，恰恰是承接"用户还没想清楚"的意图——<b>那正是规则最无能为力的地方</b>。</p></div>
+    <p><b>如果规则就够了，这件事早就该被做完了。</b>降价提醒、比价、价格日历是 OTA 十几年前就有的规则功能，至今没有创造出"无预订需求时的打开理由"，因为规则的边界是"用户已经把需求说清楚了"——而需求一旦说清楚，人就已经站在收银台前了。<b>AI 扩的不是提醒的精度，是入口的宽度。</b></p>
+    <p><b>工程纪律：模型只做理解与表达，不做数值与承诺。</b></p>
+    <ul>
+      <li>模型抽取的目的地、日期、预算等结构化字段，必须落到携程库存与价格体系里校验，不合法直接丢弃重试，不做"尽力而为"</li>
+      <li>一切价格、分位、余票数字只能来自价格库，<b>绝不允许模型生成</b></li>
+      <li>时机判定由规则模型算，模型只负责把判定结果"说人话"</li>
+      <li>每条 Push 都可回放：能追溯到"哪条规则、哪次计算"触发，满足合规与客诉解释</li>
+    </ul>
+    <div class="callout key"><span class="lab">一句话</span><p>AI 负责把门开大，规则负责把账算清——AI 在前端吸收模糊，规则在后端保证确定。</p></div>
+
+    <h3><span class="idx">2.9</span>差异总览</h3>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>维度</th><th>内容平台（小红书/抖音）</th><th>携程 AI 行程助手</th><th>待出发</th></tr></thead>
+      <tbody>
+        <tr><td>服务时段</td><td>灵感期（无执行能力）</td><td>规划与出行期</td><td><b>出发前 300 天期待期，全程陪伴</b></td></tr>
+        <tr><td>承接意图</td><td>种草</td><td>明确的规划需求</td><td><b>模糊的"想去"</b></td></tr>
+        <tr><td>交互范式</td><td>无限刷</td><td>Pull 会话</td><td><b>Push + 有状态的活卡片</b></td></tr>
+        <tr><td>收藏的价值</td><td>收藏即沉没</td><td>不承接收藏</td><td><b>愿望卡自己找你</b></td></tr>
+        <tr><td>核心信息</td><td>表演型内容</td><td>线路内容</td><td><b>真实库存、价格历史、时机判断</b></td></tr>
+        <tr><td>闭环</td><td>有期待无交易</td><td>有规划无期待</td><td><b>灵感→交易→履约→沉淀全闭环</b></td></tr>
+      </tbody>
+    </table></div></div>
+  </section>
+
+  <!-- ================= 03 ================= -->
+  <section class="sec" id="s3">
+    <div class="sec-no">SECTION 03</div>
+    <h2>产品落地：V1.0 → V2.0 迭代路线</h2>
+    <p>原则：<b>不赌一次性豪注</b>。V1.0 用最小成本验证核心假设，数据达标后再逐级放大。</p>
+
+    <h3><span class="idx">3.1</span>V1.0（第 1 个月）：验证"愿望 → 回访 → 下单"链路</h3>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>周</th><th>交付</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><b>W1</b></td><td>许愿入口 + 愿望卡</td><td>一句话 / 链接 / 截图三种输入，AI 解析生成愿望卡（目的地 / 最佳月份 / 预估预算）</td></tr>
+        <tr><td><b>W2</b></td><td>价格监控 + 时机引擎</td><td>接入机票 / 酒店历史价格，日更分位计算，实现 Timing Score 与触发规则</td></tr>
+        <tr><td><b>W3</b></td><td>一键成行</td><td>愿望卡 → 调用 AI 行程助手生成 3~5 天行程草案 → 跳转现有下单流程（不自建交易页）</td></tr>
+        <tr><td><b>W4</b></td><td>灰度上线 + 埋点</td><td>灰度 1 万年轻用户（25 岁以下优先），全链路埋点，开启 A/B</td></tr>
+      </tbody>
+    </table></div></div>
+    <div class="callout warn"><span class="lab">明确不做（同样重要）</span><p>不做社区、不做 UGC、不做社交、不做全量城市、不做独立 App、不重做行程助手。只打透一个场景（建议：出境自由行，客单价高、决策周期长、期待期价值最大）。</p><p>Demo 中展示的「归档」页为 V1.5 概念预览，不在 V1.0 交付范围。</p></div>
+    <p><b>V1.0 的验证假设</b>：把"想去"存在携程里的人，会为了等一个时机而反复回来，并在时机成熟时真的下单。</p>
+
+    <h3><span class="idx">3.2</span>Stage-Gate：进入下一版本的数据门槛</h3>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>门槛指标</th><th>目标值（示例，以灰度实测校准）</th></tr></thead>
+      <tbody>
+        <tr><td>许愿用户 30 日回访率</td><td>≥ 普通用户 1.5 倍</td></tr>
+        <tr><td>许愿 → 下单转化率（90 天窗口）</td><td>≥ 同城市普通浏览用户的 2 倍</td></tr>
+        <tr><td>时机提醒 Push 打开率</td><td>≥ 15%（行业 Push 均值约 3~5%）</td></tr>
+        <tr><td>Push 退订 / 关闭通知率</td><td>≤ 5%</td></tr>
+      </tbody>
+    </table></div></div>
+    <p>任一门槛未达标 → 不放大，回炉迭代触点与模型；全部达标 → 进入 V1.5。</p>
+
+    <h3><span class="idx">3.3</span>V1.5（第 2~3 个月）：三段式全量 + 归档闭环</h3>
+    <ul>
+      <li>「待出发」区段扩展至全量用户，行程页完成生命周期覆盖</li>
+      <li>归档能力上线：行程日期锚定相册导入、旅行手记、足迹地图</li>
+      <li>愿望卡与 AI 行程助手深度打通：时机成熟自动带上下文生成线路</li>
+    </ul>
+
+    <h3><span class="idx">3.4</span>V2.0（6 个月+）：数据飞轮与生态放大</h3>
+    <ul>
+      <li><b>个性化许愿建议</b>：基于订单历史与足迹，AI 主动提议"你可能想去的地方"（懂你，所以可信）</li>
+      <li><b>同愿成团</b>：聚合"同时间段、同目的地"的愿望人群，反向向航司 / 酒店议价（且只有携程有供应链承接）</li>
+      <li><b>轻社交</b>：愿望卡可分享给好友"组队蹲降价"，仅此而已，不做信息流</li>
+      <li><b>年度旅行报告</b>：12 月全员推送"你的旅行年度报告"，借势 Spotify Wrapped 式的社交刷屏</li>
+      <li><b>会员化</b>：愿望成行次数、足迹解锁兑换权益，沉淀长期忠诚度</li>
+    </ul>
+
+    <h3><span class="idx">3.5</span>落地保障：数据、系统、团队与 AI 资源</h3>
+
+    <p><b>数据可得性（先于一切功能的前提）</b></p>
+    <ul>
+      <li>V1.0 只监控<b>机票</b>——标准化 SKU，价格历史来自携程搜索缓存与运价库，覆盖出境 Top 200 航线</li>
+      <li>报价样本不足 60 次的目的地<b>不显示分位</b>，卡面如实显示「数据积累中」——不硬算、不编造</li>
+      <li>酒店 / 门票价格离散、无标准价，留待 V1.5 与酒店频道共建口径</li>
+    </ul>
+
+    <p><b>系统边界（新增 vs 复用）</b></p>
+    <ul>
+      <li>新增：<b>愿望卡服务</b>（卡片存储 + 每日定时调度）+ 行程 Tab 前端区段</li>
+      <li>复用：消息中心（Push 通道）、AI 行程助手（API 入参 = 愿望卡 JSON）、下单链路（跳转参数携带 <b>wish_id</b> 做归因）</li>
+      <li>灰度开关与降级开关：时机引擎异常时自动回退为「仅手动查看卡面」，<b>绝不阻断交易主链路</b></li>
+    </ul>
+
+    <p><b>团队配置与协作界面</b></p>
+    <ul>
+      <li>PM ×1 + 前端 ×2 + 后端 ×2 + 算法 ×1 + 数据分析 ×1，虚拟项目组从行程 / 机票频道抽调；4 周为纯开发窗口，不含跨团队排期排队</li>
+      <li>商务 / 运营资源：机票频道数据接口人 1 名（运价库权限）、Push 通道配额申请、客服团队承接差价返还的审核与履约</li>
+    </ul>
+
+    <p><b>AI 资源怎么用（不自训模型，把集团现有 AI 用出杠杆）</b></p>
+    <ul>
+      <li><b>模型选型</b>：全部调用集团 AI 中台的大模型，不自训、不部署；LLM 只负责「理解与表达」，时机分由规则引擎计算，价格数字只从价格库读取——模型与数值系统物理隔离</li>
+      <li><b>评测集门槛</b>：建立许愿解析评测集（≥500 条，覆盖一句话 / 截图 OCR / 第三方链接 / 语音转写四类输入），目的地、月份等核心字段抽取准确率 <b>≥95%</b> 才允许上线；badcase 每周回归</li>
+      <li><b>成本测算</b>：单次许愿解析的模型调用成本约 ¥0.02 以内，1 万张愿望卡的月解析成本 <b>&lt; ¥1,000</b>，可忽略；生成类调用（提醒话术、行程草案）仅在触发时发生</li>
+      <li><b>人机协同</b>：模型置信度低（候选目的地得分差低于阈值）时<b>不猜测</b>，转用户确认或进入人工抽检队列——宁漏勿错</li>
+    </ul>
+  </section>
+
+  <!-- ================= 04 ================= -->
+  <section class="sec" id="s4">
+    <div class="sec-no">SECTION 04</div>
+    <h2>效果验证：如何判断它不只是"有趣的概念"</h2>
+
+    <div class="callout key"><span class="lab">北极星指标</span><p><b>许愿用户的 30 日回访率</b>（对比普通用户的回访率）——它直接回答本题的核心命题："是否创造了无预订需求时的打开理由"。</p></div>
+
+    <h3><span class="idx">4.2</span>商业测算（保守口径，灰度量级）</h3>
+    <p>1 万灰度用户 × 许愿率 20% = 2,000 张愿望卡；90 天转化按 8%（普通浏览用户 4% 的 2 倍）= 160 单；机票 + 酒店客单按 ¥8,000 计，≈ <b>¥128 万增量 GMV / 90 天</b>。规模化至 1,000 万年轻用户，对应年增量 GMV 约 ¥1.5 亿量级——且这部分是<b>纯增量</b>：没有「待出发」，这些用户会在内容平台种草后流失到其他渠道成交。</p>
+
+    <h3><span class="idx">4.3</span>指标口径与实验设计</h3>
+    <ul>
+      <li><b>30 日回访</b> = 许愿后 30 天内 ≥4 天打开 App，且 ≥2 次进入行程 Tab 查看卡面（点开一次不算回访）</li>
+      <li><b>许愿 → 下单</b> = 下单链路携带 wish_id 归因，90 天窗口，同用户去重</li>
+      <li><b>Push 打开率</b> 的分母 = 送达数，而非推送数</li>
+      <li><b>实验分组</b>：灰度 / 对照按 年龄 × 城市等级 × 年出行频次 分层配对；样本量与 MDE 由数据组在 W1 完成测算（参考：MDE 20%、α=0.05、power=80%）</li>
+      <li><b>看数节奏</b>：D+7 看早期信号、D+30 判定北极星、D+90 判定转化</li>
+    </ul>
+
+    <h3><span class="idx">4.4</span>过程指标（漏斗）</h3>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>环节</th><th>指标</th><th>目标（示例）</th></tr></thead>
+      <tbody>
+        <tr><td>许愿</td><td>首访用户 → 创建第 1 张愿望卡</td><td>≥ 20%</td></tr>
+        <tr><td>活跃</td><td>人均愿望卡数 / 周卡面查看次数</td><td>≥ 3 张 / ≥ 2 次</td></tr>
+        <tr><td>触达</td><td>时机提醒 Push 打开率</td><td>≥ 15%</td></tr>
+        <tr><td>转化</td><td>愿望 → 下单（90 天窗口）</td><td>≥ 普通用户 2 倍</td></tr>
+        <tr><td>效率</td><td>从许愿到下单的平均天数</td><td>持续缩短</td></tr>
+        <tr><td>沉淀</td><td>行程结束 → 归档产物生成率</td><td>≥ 40%</td></tr>
+      </tbody>
+    </table></div></div>
+
+    <h3><span class="idx">4.5</span>反指标（健康度）</h3>
+    <ul>
+      <li>Push 退订率 / 通知关闭率（≤ 5%）——打扰是最大风险</li>
+      <li>僵尸愿望卡占比（创建后 30 天从未被查看，≤ 30%）——收藏夹化的信号</li>
+      <li>卸载率变化（灰度组 vs 对照组）</li>
+    </ul>
+
+    <h3><span class="idx">4.6</span>判死线（诚实的产品观）</h3>
+    <div class="callout warn"><span class="lab">判死线</span><p>若许愿用户 30 日回访率 &lt; 普通用户的 1.5 倍，说明"愿望单"退化成了"收藏夹"——触点与时机引擎需要重做，而非继续加功能。</p></div>
+    <p>配套实验设计：灰度 1 万用户 vs 同质对照组，90 天窗口观察；对"降价 Push"单独做开 / 关 A/B，以剥离"真实降价"与"产品体验"各自贡献。</p>
+  </section>
+
+  <!-- ================= 05 ================= -->
+  <section class="sec" id="s5">
+    <div class="sec-no">SECTION 05</div>
+    <h2>备选方案（其他值得尝试的方向）</h2>
+    <div class="alt3">
+      <div class="alt"><span class="lt">方案 A</span><div class="h">「凑一趟」——反向 C2M 团购</div>
+        <p>用户表达"我想 3 月去冰岛、预算 8000"，平台聚合同意图人群，反向向航司 / 酒店 / 地接议价开团。可独立成立，也可在 V2.0 并入「待出发」（同愿成团）。</p></div>
+      <div class="alt"><span class="lt">方案 B</span><div class="h">「拼假规划师」——从"时间"切入</div>
+        <p>年轻人旅行的第一约束是时间不是钱。结合法定节假日 + 年假余额，AI 算出全年最优出行窗口（"请 2 休 9"）并提前 3 个月提示"现在订最便宜"。拼假攻略每年必上热搜，天然刷屏体质。</p></div>
+      <div class="alt"><span class="lt">方案 C</span><div class="h">「此刻」——用真实交易数据做内容</div>
+        <p>"此刻 12 万人在大理；昆明酒店均价今天降了 18%。"内容平台的数据是表演出来的，携程的数据是真实发生的——好奇心驱动的高频内容，且天然带转化入口。</p></div>
+    </div>
+  </section>
+
+  <!-- ================= 06 ================= -->
+  <section class="sec" id="s6">
+    <div class="sec-no">SECTION 06</div>
+    <h2>风险与边界</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>风险</th><th>应对</th></tr></thead>
+      <tbody>
+        <tr><td>Push 打扰导致通知权限关闭</td><td>频控铁律（2.5）；反指标监控；宁可少推不可错推</td></tr>
+        <tr><td>价格预测不准，透支信任</td><td>透明化依据 + 差价返还兜底（2.7）；趋势分不达标不推</td></tr>
+        <tr><td>相册授权的隐私顾虑</td><td>仅在用户主动触发归档时申请；按行程日期最小范围读取；本地筛选、明示用途</td></tr>
+        <tr><td>与 AI 行程助手的定位混淆</td><td>明确上下游分工（2.2）：助手做"规划执行"，待出发做"意图蓄水"</td></tr>
+        <tr><td>依赖多团队协同（供应链 / 数据 / 交易）</td><td>V1.0 只读价格数据 + 复用现有下单链路与行程助手，组织成本最小化</td></tr>
+        <tr><td>大促期间价格信号噪音</td><td>时机模型对大促时段单独校准分位基线</td></tr>
+        <tr><td>AI 幻觉（编造航班 / 价格 / 签证）</td><td>模型只做理解与表达，数值一律取自价格与库存库；结构化字段强校验，不合规即重试（2.8）</td></tr>
+      </tbody>
+    </table></div></div>
+  </section>
+
+  <!-- ================= 07 ================= -->
+  <section class="sec" id="s7">
+    <div class="sec-no">SECTION 07</div>
+    <h2>结语</h2>
+    <p>携程缺的从来不是供给和交易能力，而是一个<b>在用户"还没有需求"的 300 天里，持续被需要的理由</b>。</p>
+    <div class="ending">
+      <p>「待出发」把携程的行程页，从"确定性的管理者"延伸为"可能性的蓄水池"：</p>
+      <div class="fin">把 <em>"总有一天"</em>，变成 <em>"就这次"</em>。</div>
+    </div>
+    <div class="appendix">附注：文中目标数值均为基于行业常识的示例估算，用于说明验证逻辑与量级，实际以灰度实验校准为准。</div>
+  </section>
+
+  </article>
+</div>
+
+<script>
+(function(){
+  var bar = document.getElementById('progress');
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a[data-sec]'));
+  var secs = links.map(function(a){ return document.getElementById(a.getAttribute('data-sec')); });
+
+  function onScroll(){
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max * 100) : 0) + '%';
+
+    var pos = h.scrollTop + 140;
+    var cur = 0;
+    for(var i = 0; i < secs.length; i++){
+      if(secs[i] && secs[i].offsetTop <= pos) cur = i;
+    }
+    links.forEach(function(a, i){ a.classList.toggle('on', i === cur); });
+  }
+  window.addEventListener('scroll', onScroll, { passive:true });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>

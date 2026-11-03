@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>待出发 · 携程行程Tab原型</title>
+<style>
+  :root{
+    --blue:#2577E3; --blue-d:#1B62C0;
+    --grad-btn:linear-gradient(90deg,#3D8BFF,#6A5CFF);
+    --bg:#F6F7F9; --card:#FFFFFF;
+    --ink:#212121; --sub:#999999; --line:#F0F0F0;
+    --orange:#FF5000; --green:#19BE6B; --red:#FF4132;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    background:#E9EDF3; min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:28px 14px; color:var(--ink);
+  }
+  /* 手机壳 */
+  .phone{ position:relative; width:390px; height:844px; background:#000; border-radius:44px; padding:10px;
+    box-shadow:0 34px 70px rgba(20,30,50,.4); }
+  .screen-holder{ position:relative; width:100%; height:100%; background:var(--bg); border-radius:36px; overflow:hidden; }
+  .notch{ position:absolute; top:9px; left:50%; transform:translateX(-50%); width:112px; height:24px; background:#000; border-radius:12px; z-index:40; }
+
+  /* 状态栏 */
+  .statusbar{ position:relative; z-index:30; height:46px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font-size:13px; font-weight:600; color:#222; }
+
+  /* 屏幕 */
+  .screen{ position:absolute; inset:46px 0 0 0; display:none; flex-direction:column; overflow:hidden; }
+  .screen.active{ display:flex; animation:slideIn .28s ease; }
+  @keyframes slideIn{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:none;} }
+  .scroll{ flex:1; overflow-y:auto; scrollbar-width:none; }
+  .scroll::-webkit-scrollbar{ display:none; }
+
+  /* 页头 */
+  .page-hd{ display:flex; align-items:flex-start; justify-content:space-between; padding:6px 16px 4px; }
+  .page-hd .t{ font-size:20px; font-weight:700; color:#222; }
+  .page-hd .acts{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .page-hd .act{ display:flex; align-items:center; gap:3px; font-size:11px; color:#666; }
+
+  /* 段落标题（携程刷痕样式） */
+  .sec-hd{ display:flex; align-items:center; justify-content:space-between; padding:16px 16px 10px; }
+  .sec-hd .l{ position:relative; font-size:18px; font-weight:700; color:#222; padding:1px 3px; z-index:0; }
+  .sec-hd .l::before{ content:""; position:absolute; left:-2px; top:42%; width:calc(100% + 4px); height:58%;
+    background:linear-gradient(90deg,#CBE2FF,#E6F3FF); border-radius:4px; transform:skewX(-6deg); z-index:-1; }
+  .sec-hd .r{ font-size:12px; color:#999; }
+
+  /* 通用横滑 */
+  .hscroll{ display:flex; gap:10px; overflow-x:auto; padding:2px 16px 6px; scrollbar-width:none; }
+  .hscroll::-webkit-scrollbar{ display:none; }
+
+  /* 左面板 + 右卡片（仿线路规划） */
+  .plan-left{ flex:none; width:128px; border-radius:12px; background:linear-gradient(165deg,#E7F2FF,#F7FBFF);
+    padding:12px 12px 12px; display:flex; flex-direction:column; box-shadow:0 2px 8px rgba(37,119,227,.06); }
+  .mini-chip{ font-size:10px; color:var(--blue); background:#fff; border-radius:99px; padding:3px 8px; width:fit-content;
+    box-shadow:0 1px 4px rgba(0,0,0,.08); font-weight:600; }
+  .plan-left .desc{ font-size:13px; color:#333; line-height:1.55; margin-top:12px; font-weight:600; }
+  .plan-left .desc em{ font-style:normal; color:var(--blue); }
+  .plan-btn{ margin-top:auto; background:var(--blue); color:#fff; border-radius:99px; font-size:13px; font-weight:600;
+    padding:8px 0; text-align:center; cursor:pointer; box-shadow:0 4px 10px rgba(37,119,227,.3); }
+  .plan-btn:active{ opacity:.85; }
+  .ai-ball{ width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#3D8BFF,#6A5CFF); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; margin-top:12px; }
+
+  /* 卡片（图片+角标+标题） */
+  .mcard{ flex:none; width:212px; background:var(--card); border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05); cursor:pointer; }
+  .mcard .cov{ height:112px; position:relative; }
+  .mcard .cov .tag{ position:absolute; top:8px; left:8px; font-size:10px; color:#fff; background:rgba(0,0,0,.48);
+    padding:2px 8px; border-radius:4px; font-weight:500; }
+  .mcard .cov .tag.hot{ background:linear-gradient(90deg,#FF7A18,#FF5000); font-weight:700; }
+  .mcard .cov .tag.amber{ background:linear-gradient(90deg,#F59E0B,#F97316); font-weight:700; }
+  .mcard .bd{ padding:10px 12px 12px; }
+  .mcard .tt{ font-size:14px; font-weight:600; color:#222; line-height:1.4; }
+  .mcard .sb{ font-size:11px; color:#999; margin-top:6px; display:flex; align-items:center; gap:6px; }
+  .dot-live{ width:6px; height:6px; border-radius:50%; background:var(--orange); display:inline-block; }
+
+  /* 待出发：纵向愿望卡 */
+  .wish-banner{ margin:0 16px; background:linear-gradient(165deg,#E7F2FF,#F7FBFF); border-radius:12px; padding:14px;
+    display:flex; align-items:center; gap:10px; box-shadow:0 2px 8px rgba(37,119,227,.06); }
+  .wish-banner .desc{ font-size:13px; color:#333; font-weight:600; margin-top:8px; line-height:1.5; }
+  .wish-banner .desc em{ font-style:normal; color:var(--blue); }
+  .wcard-v{ background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05); margin:10px 16px 0; cursor:pointer; }
+  .wcard-v .cov{ height:118px; position:relative; }
+  .wcard-v .cov .tag{ position:absolute; top:8px; left:8px; font-size:10px; color:#fff; background:rgba(0,0,0,.48); padding:2px 8px; border-radius:4px; font-weight:500; }
+  .wcard-v .cov .tag.hot{ background:linear-gradient(90deg,#FF7A18,#FF5000); font-weight:700; }
+  .wcard-v .cov .tag.amber{ background:linear-gradient(90deg,#F59E0B,#F97316); font-weight:700; }
+  .wcard-v .bd{ padding:11px 14px 13px; }
+  .wcard-v .tt{ font-size:15px; font-weight:600; color:#222; }
+  .wcard-v .sb{ font-size:11px; color:#999; margin-top:5px; display:flex; align-items:center; gap:6px; }
+
+  /* 攻略小卡 */
+  .gcard{ flex:none; width:150px; cursor:pointer; }
+  .gcard .cov{ height:100px; border-radius:10px; position:relative; }
+  .gcard .cov .tag{ position:absolute; top:6px; left:6px; font-size:10px; color:#fff; background:rgba(0,0,0,.45); padding:2px 7px; border-radius:4px; }
+  .gcard .cov .tag.hot{ background:var(--red); font-weight:700; }
+  .gcard .tt{ font-size:13px; color:#222; margin-top:8px; line-height:1.45; font-weight:500;
+    display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .gcard .au{ font-size:11px; color:#999; margin-top:5px; }
+
+  /* 旅游地图行 */
+  .map-row{ margin:6px 16px 0; background:#fff; border-radius:12px; padding:14px; display:flex; align-items:center; gap:10px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+  .map-row .ic{ width:34px; height:34px; border-radius:50%; background:#FFF3E8; display:flex; align-items:center; justify-content:center; flex:none; }
+  .map-row .tt{ font-size:15px; font-weight:600; color:#222; }
+  .map-row .ar{ margin-left:auto; font-size:12px; color:#999; }
+
+  /* 底部 tabbar */
+  .tabbar{ height:60px; background:#fff; border-top:1px solid var(--line); display:flex; padding-bottom:2px; }
+  .tab{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10px; color:#999; cursor:pointer; }
+  .tab.active{ color:var(--blue); font-weight:700; }
+
+  /* 悬浮 AI 胶囊 */
+  .ai-pill{ position:absolute; left:50%; bottom:72px; transform:translateX(-50%); z-index:20;
+    background:linear-gradient(90deg,#3D8BFF,#5B8CFF 60%,#6A5CFF); color:#fff; font-size:13px; font-weight:600;
+    padding:9px 18px; border-radius:99px; display:flex; align-items:center; gap:7px; cursor:pointer;
+    box-shadow:0 8px 22px rgba(61,139,255,.45); white-space:nowrap; }
+  .ai-pill:active{ transform:translateX(-50%) scale(.96); }
+
+  /* 遮罩 + 底部弹层 */
+  .mask{ position:absolute; inset:0; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .25s; z-index:50; }
+  .mask.show{ opacity:1; pointer-events:auto; }
+  .sheet{ position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:18px 18px 0 0; z-index:60;
+    transform:translateY(105%); transition:transform .3s cubic-bezier(.22,.8,.3,1); padding:8px 18px 22px; }
+  .sheet.show{ transform:translateY(0); }
+  .grab{ width:38px; height:4px; border-radius:99px; background:#E5E5E5; margin:2px auto 14px; }
+  .sheet .st{ font-size:17px; font-weight:700; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; }
+  .sheet .st .x{ color:#999; font-size:13px; cursor:pointer; font-weight:400; }
+
+  /* 仿 AI 助手输入框 */
+  .ai-input{ border:1.5px solid #D6E6FF; border-radius:14px; background:#FBFDFF; padding:14px 14px 12px; }
+  .ai-input .row1{ font-size:14px; color:#333; line-height:1.6; }
+  .ai-input .row1 b{ color:var(--blue); }
+
+  .ai-input .tools{ display:flex; gap:22px; margin-top:14px; color:#999; font-size:11px; align-items:center; }
+  .ai-input .tools .it{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+
+  /* 空状态 + 链接识别 */
+  .empty-card{ flex:none; width:212px; border:1.5px dashed #C9D9F5; border-radius:12px; background:#FBFDFF;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:#9BB8E8; padding:16px; }
+  .empty-card .big{ font-size:14px; font-weight:600; color:#7A93BC; }
+  .empty-card .sm{ font-size:11px; color:#A9BCD9; text-align:center; line-height:1.6; }
+  .link-pasted{ display:flex; gap:10px; background:#F7FAFF; border:1px solid #E3EEFF; border-radius:12px; padding:12px; }
+  .link-pasted .xic{ width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,#FF2E4D,#FF5C39); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; flex:none; }
+  .link-pasted .lt{ font-size:12px; color:var(--blue); font-weight:600; }
+  .link-pasted .lb{ font-size:13px; color:#222; font-weight:600; line-height:1.45; margin-top:3px; }
+  .link-pasted .ls{ font-size:11px; color:#999; margin-top:4px; }
+
+  .big-btn{ width:100%; margin-top:18px; padding:14px; border:none; border-radius:24px; background:var(--grad-btn); color:#fff;
+    font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; box-shadow:0 8px 20px rgba(61,139,255,.4); }
+  .big-btn:active{ opacity:.9; }
+  .sub-link{ text-align:center; font-size:13px; color:var(--blue); margin-top:12px; }
+  .demo-hint{ text-align:center; font-size:11px; color:#B0B8C4; margin-top:12px; }
+
+  /* 解析动画 */
+  .parse-wrap{ height:100%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 32px; }
+  .orb{ width:76px; height:76px; border-radius:50%; background:linear-gradient(135deg,#3D8BFF,#6A5CFF); position:relative;
+    box-shadow:0 16px 40px rgba(61,139,255,.4); margin-bottom:30px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; }
+  .orb::after{ content:""; position:absolute; inset:-14px; border-radius:50%; border:2px solid rgba(61,139,255,.35); animation:ring 1.5s ease-out infinite; }
+  @keyframes ring{ 0%{ transform:scale(.72); opacity:1;} 100%{ transform:scale(1.28); opacity:0;} }
+  .parse-title{ font-size:17px; font-weight:700; margin-bottom:24px; color:#222; }
+  .steps{ width:100%; display:flex; flex-direction:column; gap:16px; }
+  .step{ display:flex; align-items:center; gap:10px; font-size:13px; color:#C4CBD6; transition:.3s; }
+  .step .dot{ width:7px; height:7px; border-radius:50%; background:#DDE3EC; flex:none; transition:.3s; }
+  .step.done{ color:#333; } .step.done .dot{ background:var(--green); box-shadow:0 0 0 4px rgba(25,190,107,.15); }
+  .step .tag{ margin-left:auto; font-size:11px; font-weight:700; color:var(--blue); opacity:0; transition:.3s; }
+  .step.done .tag{ opacity:1; }
+
+  /* 愿望卡详情 */
+  .dt-hero{ height:216px; position:relative; }
+  .dt-hero .nav{ position:absolute; top:6px; left:12px; right:12px; display:flex; align-items:center; justify-content:space-between; z-index:2; }
+  .nav-circle{ width:34px; height:34px; border-radius:50%; background:rgba(0,0,0,.35); backdrop-filter:blur(4px);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .dt-hero .nm{ position:absolute; left:18px; bottom:16px; color:#fff; z-index:2; }
+  .dt-hero .nm .n{ font-size:24px; font-weight:800; text-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .dt-hero .nm .tg{ display:flex; gap:6px; margin-top:10px; }
+  .dt-hero .nm .tg span{ font-size:11px; color:#fff; background:rgba(0,0,0,.35); backdrop-filter:blur(4px); padding:3px 10px; border-radius:99px; }
+  .score-float{ position:absolute; right:14px; bottom:-22px; background:#fff; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.12);
+    padding:10px 14px; text-align:center; z-index:3; }
+  .score-float .n{ font-size:24px; font-weight:800; color:var(--orange); line-height:1; }
+  .score-float .l{ font-size:10px; color:#999; margin-top:3px; }
+
+  .dt-card{ background:#fff; border-radius:14px; margin:34px 14px 0; padding:16px; box-shadow:0 2px 10px rgba(0,0,0,.05); }
+  .kv{ display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .kv:last-of-type{ border-bottom:none; }
+  .kv .k{ color:#999; } .kv .v{ font-weight:600; color:#222; } .kv .v.oc{ color:var(--orange); }
+  .chart-cap{ font-size:12px; color:#999; margin-bottom:6px; }
+
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; background:#F7F9FC; border-radius:12px; padding:13px 14px; margin-top:14px; }
+  .toggle-row .t{ font-size:13px; font-weight:600; } .toggle-row .t small{ display:block; color:#999; font-weight:400; font-size:11px; margin-top:3px; }
+  .switch{ width:46px; height:26px; border-radius:99px; background:#DDE3EC; position:relative; cursor:pointer; transition:.25s; flex:none; }
+  .switch::after{ content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:.25s; box-shadow:0 1px 4px rgba(0,0,0,.2); }
+  .switch.on{ background:var(--green); } .switch.on::after{ left:23px; }
+
+  /* 详情底部预订栏 */
+  .book-bar{ background:#fff; border-top:1px solid var(--line); padding:10px 16px 14px; display:flex; align-items:center; gap:14px; }
+  .book-bar .pr .p{ font-size:20px; font-weight:800; color:var(--orange); }
+  .book-bar .pr .s{ font-size:10px; color:#999; }
+  .book-bar .btn{ flex:1; background:var(--grad-btn); color:#fff; border:none; border-radius:22px; padding:12px; font-size:15px;
+    font-weight:700; cursor:pointer; font-family:inherit; }
+  .demo-link{ text-align:center; font-size:11px; color:#B0B8C4; padding:12px; cursor:pointer; }
+
+  /* 成行页 */
+  .nv-hd{ display:flex; align-items:center; gap:12px; padding:4px 16px 12px; background:#fff; }
+  .nv-hd .b{ width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .nv-hd .b:active{ background:#F2F4F7; }
+  .nv-hd .t{ font-size:17px; font-weight:700; }
+  .dayc{ background:#fff; border-radius:12px; padding:13px 14px; margin:0 16px 10px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+  .dayc .dd{ font-size:13px; font-weight:700; color:var(--blue); }
+  .dayc .dl{ font-size:13px; color:#666; margin-top:6px; line-height:1.6; }
+  .price-card{ background:#FFF8F3; border-radius:12px; margin:6px 16px 0; padding:14px; display:flex; align-items:center; justify-content:space-between; }
+  .price-card .p{ font-size:22px; font-weight:800; color:var(--orange); }
+  .price-card .s{ font-size:11px; color:var(--orange); background:#FFE8D9; padding:3px 8px; border-radius:99px; font-weight:600; }
+  .price-card .n{ font-size:11px; color:#999; margin-top:4px; }
+
+  /* 归档页 */
+  .arc-hero{ height:170px; position:relative; }
+  .arc-hero .meta{ position:absolute; left:16px; bottom:14px; color:#fff; z-index:2; }
+  .arc-hero .meta .t{ font-size:22px; font-weight:800; text-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .arc-hero .meta .s{ font-size:11px; opacity:.92; margin-top:6px; }
+  .arc-chip{ display:inline-block; font-size:10px; color:#fff; background:rgba(255,255,255,.28); padding:3px 10px; border-radius:99px; margin-top:8px; }
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 16px 0; }
+  .stat-c{ background:#fff; border-radius:12px; padding:12px 4px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+  .stat-c .n{ font-size:15px; font-weight:800; color:#222; }
+  .stat-c .l{ font-size:10px; color:#999; margin-top:4px; }
+  .arc-card{ border-radius:14px; margin:12px 16px 0; padding:14px; color:#fff; position:relative; overflow:hidden; }
+  .arc-card .t{ font-size:14px; font-weight:700; }
+  .arc-card .s{ font-size:11px; opacity:.88; margin-top:5px; line-height:1.6; }
+  .play-btn{ position:absolute; right:14px; top:50%; transform:translateY(-50%); width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.28); display:flex; align-items:center; justify-content:center; }
+  .fuel-card{ background:#fff; border-radius:14px; margin:12px 16px 0; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+  .fuel-card .ft{ font-size:13px; font-weight:700; color:#222; }
+  .fuel-card .fs{ font-size:11px; color:#999; margin-top:4px; line-height:1.6; }
+  .fuel-rec{ display:flex; align-items:center; gap:10px; margin-top:12px; background:#F7FAFF; border:1px solid #E3EEFF; border-radius:12px; padding:10px 12px; }
+  .fuel-rec .fv{ flex:1; }
+  .fuel-rec .fv b{ font-size:13px; color:#222; display:block; }
+  .fuel-rec .fv span{ font-size:11px; color:var(--orange); font-weight:600; }
+  .fuel-rec .fb{ font-size:12px; color:#fff; background:var(--blue); border-radius:99px; padding:6px 14px; cursor:pointer; flex:none; }
+
+  /* push */
+  .push{ position:absolute; top:6px; left:12px; right:12px; background:rgba(255,255,255,.97); border-radius:16px;
+    box-shadow:0 14px 40px rgba(0,0,0,.22); padding:12px 14px; z-index:70; cursor:pointer; display:flex; gap:11px; align-items:center;
+    transform:translateY(-140%); transition:transform .38s cubic-bezier(.22,.8,.3,1); }
+  .push.show{ transform:translateY(0); }
+  .push .pi{ width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#3D8BFF,#2577E3); display:flex; align-items:center; justify-content:center; flex:none; color:#fff; font-weight:800; font-size:11px; }
+  .push .pt{ font-size:11px; color:#999; } .push .pm{ font-size:13px; font-weight:600; margin-top:2px; color:#222; } .push .pm b{ color:var(--orange); }
+
+  /* toast */
+  .toast{ position:absolute; left:50%; bottom:96px; transform:translate(-50%,16px); background:rgba(0,0,0,.85); color:#fff;
+    font-size:13px; padding:10px 18px; border-radius:99px; opacity:0; pointer-events:none; transition:.3s; z-index:80; white-space:nowrap; }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="screen-holder">
+      <div class="notch"></div>
+
+      <!-- 状态栏 -->
+      <div class="statusbar">
+        <span>9:41</span>
+        <span style="display:flex;align-items:center;gap:5px;">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="#222"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1" opacity=".35"/></svg>
+          <svg width="16" height="11" viewBox="0 0 16 12" fill="none"><path d="M8 10.4a1.5 1.5 0 1 0 0 .01ZM3.2 6.9a7 7 0 0 1 9.6 0L11 8.7a4.6 4.6 0 0 0-6 0ZM.6 4.3a10.4 10.4 0 0 1 14.8 0L13.7 6a7.8 7.8 0 0 0-11.2 0Z" fill="#222"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#222" opacity=".5"/><rect x="2" y="2" width="15" height="8" rx="2" fill="#222"/><path d="M23 4v4a2.2 2.2 0 0 0 0-4Z" fill="#222" opacity=".5"/></svg>
+        </span>
+      </div>
+
+      <!-- ========== 行程 Tab 首页 ========== -->
+      <div class="screen active" id="screen-home">
+        <div class="scroll" style="padding-bottom:110px;">
+          <!-- 页头 -->
+          <div class="page-hd">
+            <div class="t">暂无行程</div>
+            <div class="acts">
+              <div class="act"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#666" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="#666" stroke-width="2" stroke-linecap="round"/></svg>添加行程</div>
+              <div class="act"><svg width="13" height="13" viewBox="0 0 24 24" fill="#666"><rect x="3" y="5" width="18" height="2.4" rx="1.2"/><rect x="3" y="11" width="18" height="2.4" rx="1.2"/><rect x="3" y="17" width="18" height="2.4" rx="1.2"/></svg>更多</div>
+            </div>
+          </div>
+
+          <!-- 待出发（新增区段） -->
+          <div class="sec-hd"><span class="l">待出发</span><span class="r" id="wish-count">许下第 1 个愿望 ›</span></div>
+          <div class="wish-banner">
+            <div style="flex:1;">
+              <span class="mini-chip">AI 帮你蹲时机</span>
+              <div class="desc">把<em>"想去"</em>存进来，AI 每天盯价格、算时机</div>
+            </div>
+            <div class="plan-btn" style="margin-top:0;padding:9px 22px;" onclick="openSheet()">许愿</div>
+          </div>
+          <div class="empty-card" id="card-empty" style="margin:10px 16px 0;width:auto;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.6-7-9.5A7 7 0 0 1 12 4a7 7 0 0 1 7 6.5C19 15.4 12 20 12 20Z" stroke="#B9CCE8" stroke-width="1.8"/><circle cx="12" cy="10" r="2.4" stroke="#B9CCE8" stroke-width="1.8"/></svg>
+            <div class="big">还没有愿望</div>
+            <div class="sm">点上方「许愿」或下方「问 AI」<br>把想去的地方存进来</div>
+          </div>
+          <div class="wcard-v" id="card-ice" style="display:none;" onclick="openDetail('ice')">
+            <div class="cov">
+              <img src="bingdao1.jpg" alt="冰岛极光" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentNode.style.background='linear-gradient(130deg,#0B2B4E,#1F6FEB 58%,#4FC3F7)';this.remove();" />
+              <span class="tag hot">现在入手</span>
+            </div>
+            <div class="bd">
+              <div class="tt">冰岛 · 追极光</div>
+              <div class="sb"><span class="dot-live"></span>时机分 92 · 近 3 年最低</div>
+            </div>
+          </div>
+          <div class="wcard-v" id="card-hkd" style="display:none;" onclick="openDetail('hkd')">
+            <div class="cov" style="background:linear-gradient(130deg,#1E3A8A,#60A5FA 60%,#DBEAFE);">
+              <span class="tag amber">窗口临近</span>
+            </div>
+            <div class="bd">
+              <div class="tt">北海道 · 看雪</div>
+              <div class="sb"><span class="dot-live" style="background:#F59E0B;"></span>时机分 76 · 12 月 — 2 月最佳</div>
+            </div>
+          </div>
+
+          <!-- 线路规划（仿现有） -->
+          <div class="sec-hd"><span class="l">线路规划</span><span class="r">我的线路 ›</span></div>
+          <div class="hscroll">
+            <div class="plan-left">
+              <span class="mini-chip">支持智能推荐线路</span>
+              <div class="ai-ball">AI</div>
+              <div class="desc">想去哪<br>一句话的事</div>
+              <div class="plan-btn" onclick="openSheet()">开始规划</div>
+            </div>
+            <div class="mcard">
+              <div class="cov" style="background:linear-gradient(130deg,#8A5A2B,#D4A373 60%,#F1D9B8);">
+                <span class="tag">我的线路</span>
+              </div>
+              <div class="bd">
+                <div class="tt">迪拜五日·哈利法塔与阿拉伯风情</div>
+                <div class="sb">5 天 · 17 个地点</div>
+              </div>
+            </div>
+            <div class="mcard">
+              <div class="cov" style="background:linear-gradient(130deg,#334155,#64748B 60%,#CBD5E1);">
+                <span class="tag">我的线路</span>
+              </div>
+              <div class="bd">
+                <div class="tt">经典上海·魔都三日深度游</div>
+                <div class="sb">3 天 · 14 个地点</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 旅游地图（仿现有） -->
+          <div class="map-row">
+            <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11Z" stroke="#FF7A18" stroke-width="2"/><circle cx="12" cy="10" r="2.6" fill="#FF7A18"/></svg></div>
+            <div class="tt">旅游地图</div>
+            <div class="ar">发现你的旅行灵感 ›</div>
+          </div>
+
+          <!-- 攻略（仿现有） -->
+          <div class="sec-hd"><span class="l">上海</span><span class="r">攻略 ›</span></div>
+          <div class="hscroll">
+            <div class="gcard">
+              <div class="cov" style="background:linear-gradient(150deg,#B91C1C,#F97316);"><span class="tag">当地指南</span></div>
+              <div class="tt">上海原来这么好玩？怎么都没人说啊！</div>
+              <div class="au">12.6w 浏览</div>
+            </div>
+            <div class="gcard">
+              <div class="cov" style="background:linear-gradient(150deg,#1E3A8A,#3B82F6);"><span class="tag">笔记</span></div>
+              <div class="tt">一站式打卡上海老牌小吃，老字号美食合集</div>
+              <div class="au">爱情神话妞妞</div>
+            </div>
+            <div class="gcard">
+              <div class="cov" style="background:linear-gradient(150deg,#0F766E,#2DD4BF);"><span class="tag">线路规划</span></div>
+              <div class="tt">上海 2 日与童话奇遇</div>
+              <div class="au">5 个玩法</div>
+            </div>
+          </div>
+
+          <div class="sec-hd"><span class="l">哈尔滨</span><span class="r">攻略 ›</span></div>
+          <div class="hscroll">
+            <div class="gcard">
+              <div class="cov" style="background:linear-gradient(150deg,#7C3AED,#C084FC);"><span class="tag hot">HOT</span></div>
+              <div class="tt">来哈尔滨的第一件事，必须是吃这一口</div>
+              <div class="au">8.9w 浏览</div>
+            </div>
+            <div class="gcard">
+              <div class="cov" style="background:linear-gradient(150deg,#0369A1,#38BDF8);"><span class="tag">当地指南</span></div>
+              <div class="tt">哈尔滨冰雪大世界全攻略，看这一篇就够</div>
+              <div class="au">旅行定制师</div>
+            </div>
+            <div class="gcard">
+              <div class="cov" style="background:linear-gradient(150deg,#B45309,#FBBF24);"><span class="tag">线路规划</span></div>
+              <div class="tt">哈尔滨 3 日冰雪奇缘路线</div>
+              <div class="au">3 天 · 11 个地点</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 悬浮 AI 胶囊 -->
+        <div class="ai-pill" onclick="openSheet()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="9" y="2.5" width="6" height="11" rx="3" stroke="#fff" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+          问 AI 或按住说话
+        </div>
+
+        <!-- 底部 tabbar -->
+        <div class="tabbar">
+          <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>首页</div>
+          <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>消息</div>
+          <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c3 3.5 3 14 0 18-3-4-3-14.5 0-18Z" stroke="currentColor" stroke-width="1.8"/></svg>社区</div>
+          <div class="tab active"><svg width="23" height="23" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>行程</div>
+          <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c0-3.6 3.6-5.5 8-5.5s8 1.9 8 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>我的</div>
+        </div>
+      </div>
+
+      <!-- ========== 愿望卡详情 ========== -->
+      <div class="screen" id="screen-detail">
+        <div class="scroll" style="padding-bottom:12px;">
+          <div class="dt-hero" id="dt-hero" style="background:linear-gradient(150deg,#0B2B4E,#1F6FEB 55%,#4FC3F7);">
+            <img id="dt-hero-img" src="bingdao2.jpg" alt="目的地" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';" />
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.18) 0%,transparent 42%,rgba(0,0,0,.42) 100%);"></div>
+            <div class="nav">
+              <div class="nav-circle" onclick="showScreen('screen-home')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="nav-circle" onclick="showPush()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3a6 6 0 0 0-6 6v3.5L4.5 15h15L18 12.5V9a6 6 0 0 0-6-6Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 18a2 2 0 0 0 4 0" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+            </div>
+            <div class="nm">
+              <div class="n" id="dt-name">冰岛 · 追极光</div>
+              <div class="tg" id="dt-tags"><span>极光季</span><span>自由行</span><span>5 天</span></div>
+            </div>
+            <div class="score-float"><div class="n" id="dt-score">92</div><div class="l">入手时机分</div></div>
+          </div>
+
+          <div class="dt-card">
+            <div class="kv"><span class="k">当前状态</span><span class="v oc" id="dt-status">近 3 年最低 · 建议现在入手</span></div>
+            <div class="kv"><span class="k">依据</span><span class="v" id="dt-basis">近 36 个月 218 次报价 · 第 8 百分位</span></div>
+            <div class="chart-cap" style="margin-top:14px;">近 3 年往返含税价格走势</div>
+            <svg width="100%" height="84" viewBox="0 0 320 84" preserveAspectRatio="none">
+              <defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2577E3" stop-opacity=".22"/><stop offset="1" stop-color="#2577E3" stop-opacity="0"/></linearGradient></defs>
+              <path d="M0,38 C30,28 45,50 70,42 C95,34 110,56 140,48 C170,40 185,58 215,53 C245,48 260,26 320,16 L320,84 L0,84 Z" fill="url(#ar)"/>
+              <path d="M0,38 C30,28 45,50 70,42 C95,34 110,56 140,48 C170,40 185,58 215,53 C245,48 260,26 320,16" fill="none" stroke="#2577E3" stroke-width="2.4" stroke-linecap="round"/>
+              <circle cx="320" cy="16" r="4.5" fill="#FF5000" stroke="#fff" stroke-width="2"/>
+            </svg>
+            <div class="kv"><span class="k">最佳出行窗口</span><span class="v" id="dt-win">11 月 — 次年 3 月</span></div>
+            <div class="kv"><span class="k">最佳预订窗口</span><span class="v" id="dt-bookwin">现在 — 11 月底</span></div>
+            <div class="kv"><span class="k">预估预算</span><span class="v" id="dt-budget">¥18,500 / 人</span></div>
+            <div class="kv"><span class="k">所需假期</span><span class="v" id="dt-days">5 天</span></div>
+
+            <div class="toggle-row">
+              <div class="t">降价提醒<small>时机成熟时，第一时间通知你</small></div>
+              <div class="switch on" onclick="toggleSwitch(this)"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="book-bar">
+          <div class="pr"><div class="p" id="dt-price">¥18,500<span style="font-size:12px;font-weight:400;color:#999;"> / 人</span></div><div class="s" id="dt-pricesub">往返含税 · 可改退</div></div>
+          <button class="btn" id="dt-bookbtn" onclick="showScreen('screen-booking')">一键成行</button>
+        </div>
+      </div>
+
+      <!-- ========== 一键成行 ========== -->
+      <div class="screen" id="screen-booking">
+        <div class="nv-hd">
+          <div class="b" onclick="showScreen('screen-detail')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="t">一键成行</div>
+        </div>
+        <div style="font-size:12px;color:#999;padding:0 16px 4px;">已调用 AI 行程助手，基于你的愿望卡生成 5 天方案</div>
+
+        <div class="scroll" style="padding-top:12px;">
+          <div id="day-list"></div>
+
+          <div class="price-card">
+            <div>
+              <div class="p" id="bk-price">¥18,500<span style="font-size:12px;font-weight:400;color:#999;"> / 人</span></div>
+              <div class="n" id="bk-note">往返含税机票 + 4 晚酒店 + 接送机</div>
+            </div>
+            <div class="s" id="bk-save">比行情价省 ¥2,300</div>
+          </div>
+          <div style="height:16px;"></div>
+        </div>
+
+        <div class="book-bar">
+          <button class="btn" style="flex:1;" onclick="bookNow()">立即预订</button>
+        </div>
+      </div>
+
+      <!-- ========== 旅行归档（回来） ========== -->
+      <div class="screen" id="screen-archive">
+        <div class="nv-hd">
+          <div class="b" onclick="showScreen('screen-home')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="t">旅行手记</div>
+        </div>
+        <div class="scroll" style="padding-top:0;">
+          <div class="arc-hero" id="arc-hero" style="background:linear-gradient(150deg,#0B2B4E,#1F6FEB 55%,#4FC3F7);">
+            <img id="arc-img" src="bingdao2.jpg" alt="旅行照片" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';" />
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),transparent 40%,rgba(0,0,0,.5));"></div>
+            <div class="meta">
+              <div class="t" id="arc-name">冰岛 · 追极光</div>
+              <div class="s" id="arc-date">2026.11.12 — 11.16 · 已成行</div>
+              <span class="arc-chip">AI 已生成旅行手记</span>
+            </div>
+          </div>
+
+          <div class="stat-grid" id="stat-grid"></div>
+
+          <div class="arc-card" style="background:linear-gradient(130deg,#0B2B4E,#1F6FEB 60%,#4FC3F7);">
+            <div class="t">一生足迹已更新</div>
+            <div class="s" id="arc-foot">3 个国家 · 12 座城市 · 本次点亮：冰岛</div>
+          </div>
+
+          <div class="arc-card" style="background:linear-gradient(130deg,#1E1B4B,#4F46E5 60%,#818CF8);">
+            <div class="t">15 秒高光混剪</div>
+            <div class="s">AI 按行程关键节点，从你的照片里自动挑选生成</div>
+            <div class="play-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7Z"/></svg></div>
+          </div>
+
+          <div class="fuel-card">
+            <div class="ft">这次旅行，成了下次许愿的燃料</div>
+            <div class="fs">按行程日期自动框选相册照片，无需手动挑选；只有携程知道你哪几天在旅行。足迹会让下一次推荐更懂你。</div>
+            <div class="fuel-rec">
+              <div class="fv"><b id="arc-rec-name">猜你想去：挪威 · 特罗姆瑟</b><span id="arc-rec-sub">极光同款 · 机票近 3 年最低</span></div>
+              <div class="fb" onclick="showToast('已加入「待出发」（演示）')">许愿</div>
+            </div>
+          </div>
+          <div style="height:16px;"></div>
+        </div>
+      </div>
+
+      <!-- ========== AI 解析中 ========== -->
+      <div class="screen" id="screen-parsing">
+        <div class="parse-wrap">
+          <div class="orb">AI</div>
+          <div class="parse-title">正在解析你的愿望…</div>
+          <div class="steps">
+            <div class="step" id="st0"><span class="dot"></span>识别目的地<span class="tag" id="pt0">冰岛 · 雷克雅未克</span></div>
+            <div class="step" id="st1"><span class="dot"></span>解析最佳出行窗口<span class="tag" id="pt1">11 月 — 3 月</span></div>
+            <div class="step" id="st2"><span class="dot"></span>检索近 36 个月价格<span class="tag" id="pt2">218 次报价</span></div>
+            <div class="step" id="st3"><span class="dot"></span>计算入手时机分<span class="tag" id="pt3">92 / 100</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 遮罩 + 许愿弹层 -->
+      <div class="mask" id="mask" onclick="closeSheet()"></div>
+      <div class="sheet" id="sheet">
+        <div class="grab"></div>
+        <div class="st">许个愿<span class="x" onclick="closeSheet()">取消</span></div>
+
+        <div style="font-size:13px;color:#666;margin-bottom:12px;line-height:1.7;">发<b style="color:var(--blue);">图片 / 语音 / 文字 / 第三方链接</b>都行，AI 统一解析成愿望卡</div>
+
+        <div id="panel-link">
+          <div class="link-pasted">
+            <div class="xic">小红书</div>
+            <div style="flex:1;">
+              <div class="lt">已识别 1 条小红书链接</div>
+              <div class="lb">这辈子一定要去一次冰岛看极光，附 5 天攻略</div>
+              <div class="ls">旅行博主 · 12.8w 赞 · 3.2w 收藏</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="panel-type" style="display:none;">
+          <div class="ai-input">
+            <div class="row1">好想要冬天去<b>北海道</b>看雪！</div>
+            <div class="tools" style="justify-content:space-between;">
+              <div style="display:flex;gap:24px;">
+                <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="3" stroke="#999" stroke-width="1.8"/><circle cx="9" cy="10" r="2" stroke="#999" stroke-width="1.8"/><path d="m4 18 5-5 3 3 4-4 4 4" stroke="#999" stroke-width="1.8" stroke-linejoin="round"/></svg>图片</div>
+                <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="9" y="2.5" width="6" height="11" rx="3" stroke="#999" stroke-width="1.8"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5" stroke="#999" stroke-width="1.8" stroke-linecap="round"/></svg>语音</div>
+                <div class="it"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M10 14a5 5 0 0 0 7 0l2.5-2.5a5 5 0 0 0-7-7L11 6" stroke="#999" stroke-width="1.8" stroke-linecap="round"/><path d="M14 10a5 5 0 0 0-7 0l-2.5 2.5a5 5 0 0 0 7 7L13 18" stroke="#999" stroke-width="1.8" stroke-linecap="round"/></svg>链接</div>
+              </div>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="9" y="2.5" width="6" height="11" rx="3" stroke="#2577E3" stroke-width="1.8"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5" stroke="#2577E3" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <button class="big-btn" onclick="submitWish()">✨ 许愿</button>
+        <div class="sub-link">手动创建愿望</div>
+      </div>
+
+      <!-- push 通知 -->
+      <div class="push" id="push" onclick="openDetail()">
+        <div class="pi">携</div>
+        <div style="flex:1;">
+          <div class="pt">携程 · 待出发 · 现在</div>
+          <div class="pm">冰岛机票降至<b>近 3 年最低</b>，现在入手省 ¥2,300</div>
+        </div>
+      </div>
+
+      <!-- toast -->
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+
+<script>
+  function $(id){ return document.getElementById(id); }
+
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    $(id).classList.add('active');
+  }
+
+  var wishCount = 0;
+  var lastBooking = 'ice';
+
+  function setStep(txt){ var el = $('step-label'); if(el){ el.textContent = txt; } }
+
+  function openSheet(){
+    $('panel-link').style.display = wishCount === 0 ? 'block' : 'none';
+    $('panel-type').style.display = wishCount > 0 ? 'block' : 'none';
+    $('mask').classList.add('show'); $('sheet').classList.add('show');
+    if(wishCount === 0){ setStep('② 点击「✨ 许愿」，把种草帖发过去'); }
+    else { setStep('④ 再点一次「✨ 许愿」，模拟打字：好想要冬天去北海道看雪！'); }
+  }
+  function closeSheet(){ $('mask').classList.remove('show'); $('sheet').classList.remove('show'); }
+
+  function submitWish(){
+    closeSheet();
+    showScreen('screen-parsing');
+    var steps = ['st0','st1','st2','st3'];
+    var tags = wishCount === 0
+      ? ['冰岛 · 雷克雅未克','11 月 — 3 月','218 次报价','92 / 100']
+      : ['北海道 · 札幌','12 月 — 2 月','186 次报价','76 / 100'];
+    steps.forEach(function(s, idx){ $(s).classList.remove('done'); $('pt'+idx).textContent = tags[idx]; });
+    var i = 0;
+    var timer = setInterval(function(){
+      if(i < steps.length){ $(steps[i]).classList.add('done'); i++; }
+      if(i >= steps.length){
+        clearInterval(timer);
+        setTimeout(function(){
+          if(wishCount === 0){
+            $('card-empty').style.display = 'none';
+            $('card-ice').style.display = 'block';
+            $('wish-count').textContent = '1 个在等时机';
+            wishCount = 1;
+            setDetail('ice');
+            setStep('③ 已生成冰岛愿望卡（来自种草帖）。看一眼成绩单，然后返回再点 ✚ 许愿');
+            showScreen('screen-detail');
+          } else {
+            $('card-hkd').style.display = 'block';
+            $('wish-count').textContent = '2 个在等时机';
+            wishCount = 2;
+            setDetail('hkd');
+            setStep('⑤ 已生成北海道愿望卡。返回主页，两个愿望都在「待出发」等时机；点右上角铃铛可演示降价提醒');
+            showScreen('screen-detail');
+            showToast('已生成愿望卡：北海道 · 看雪');
+          }
+        }, 500);
+      }
+    }, 600);
+  }
+
+  function resetDemo(){
+    wishCount = 0;
+    $('card-ice').style.display = 'none';
+    $('card-hkd').style.display = 'none';
+    $('card-empty').style.display = 'flex';
+    $('wish-count').textContent = '许下第 1 个愿望';
+    setStep('① 点右下角 ✚ 或「问 AI」胶囊，把小红书冰岛种草帖发过去');
+    showScreen('screen-home');
+  }
+
+  function toggleSwitch(el){
+    var on = el.classList.toggle('on');
+    showToast(on ? '已开启降价提醒，时机成熟第一时间通知你' : '已关闭降价提醒');
+  }
+
+  var DETAILS = {
+    ice: {
+      hero:'linear-gradient(150deg,#0B2B4E,#1F6FEB 55%,#4FC3F7)', img:'bingdao2.jpg',
+      name:'冰岛 · 追极光', tags:['极光季','自由行','5 天'], score:'92',
+      status:'近 3 年最低 · 建议现在入手', basis:'近 36 个月 218 次报价 · 第 8 百分位',
+      win:'11 月 — 次年 3 月', bookWin:'现在 — 11 月底', budget:'¥18,500 / 人', days:'5 天',
+      price:'¥18,500', priceSub:'往返含税 · 可改退', bookBtn:"showBooking('ice')"
+    },
+    hkd: {
+      hero:'linear-gradient(150deg,#0C2D48,#1E5AA8 55%,#BEE3F8)', img:'',
+      name:'北海道 · 看雪', tags:['雪季','温泉','5 天'], score:'76',
+      status:'最佳窗口临近 · 建议 11 月底前预订', basis:'近 36 个月 186 次报价 · 第 22 百分位',
+      win:'12 月 — 2 月', bookWin:'现在 — 11 月底', budget:'¥9,800 / 人', days:'5 天',
+      price:'¥9,800', priceSub:'往返含税 · 可改退', bookBtn:"showBooking('hkd')"
+    }
+  };
+
+  function setDetail(k){
+    var d = DETAILS[k];
+    $('dt-hero').style.background = d.hero;
+    var im = $('dt-hero-img');
+    if(d.img){ im.style.display = 'block'; im.src = d.img; } else { im.style.display = 'none'; }
+    $('dt-name').textContent = d.name;
+    $('dt-tags').innerHTML = d.tags.map(function(t){ return '<span>' + t + '</span>'; }).join('');
+    $('dt-score').textContent = d.score;
+    $('dt-status').textContent = d.status;
+    $('dt-basis').textContent = d.basis;
+    $('dt-win').textContent = d.win;
+    $('dt-bookwin').textContent = d.bookWin;
+    $('dt-budget').textContent = d.budget;
+    $('dt-days').textContent = d.days;
+    $('dt-price').innerHTML = d.price + '<span style="font-size:12px;font-weight:400;color:#999;"> / 人</span>';
+    $('dt-pricesub').textContent = d.priceSub;
+    $('dt-bookbtn').setAttribute('onclick', d.bookBtn);
+  }
+
+  var BOOKINGS = {
+    ice: {
+      days: [
+        ['DAY 1 · 抵达雷克雅未克','接机 → 蓝湖温泉 → 入住市区酒店'],
+        ['DAY 2 · 黄金圈','辛格维利尔国家公园 → 间歇泉 → 黄金瀑布'],
+        ['DAY 3 · 南岸','塞里雅兰瀑布 → 黑沙滩 → 维克小镇'],
+        ['DAY 4 · 冰川与极光','冰河湖 → 钻石沙滩 → 夜间极光追猎'],
+        ['DAY 5 · 返程','雷克雅未克市区自由活动 → 送机']
+      ],
+      price:'¥18,500', save:'比行情价省 ¥2,300', note:'往返含税机票 + 4 晚酒店 + 接送机'
+    },
+    hkd: {
+      days: [
+        ['DAY 1 · 抵达札幌','新千岁机场接机 → 札幌市区 → 狸小路商店街'],
+        ['DAY 2 · 小樽','小樽运河 → 八音盒堂 → 天狗山夜景'],
+        ['DAY 3 · 登别','登别地狱谷 → 温泉街 → 入住温泉旅馆'],
+        ['DAY 4 · 滑雪日','二世谷滑雪场 → 雪地体验'],
+        ['DAY 5 · 返程','白色恋人公园 → 送机']
+      ],
+      price:'¥9,800', save:'比行情价省 ¥1,500', note:'往返含税机票 + 4 晚酒店 + 接送机'
+    }
+  };
+
+  function showBooking(k){
+    lastBooking = k;
+    var b = BOOKINGS[k];
+    $('day-list').innerHTML = b.days.map(function(d){
+      return '<div class="dayc"><div class="dd">' + d[0] + '</div><div class="dl">' + d[1] + '</div></div>';
+    }).join('');
+    $('bk-price').innerHTML = b.price + '<span style="font-size:12px;font-weight:400;color:#999;"> / 人</span>';
+    $('bk-note').textContent = b.note;
+    $('bk-save').textContent = b.save;
+    showScreen('screen-booking');
+  }
+
+  var ARCHIVES = {
+    ice: {
+      img:'bingdao2.jpg', name:'冰岛 · 追极光', date:'2026.11.12 — 11.16 · 已成行',
+      stats:[['132','张照片'],['47','公里足迹'],['5','个地点'],['¥680','最贵一餐']],
+      foot:'3 个国家 · 12 座城市 · 本次点亮：冰岛',
+      recName:'猜你想去：挪威 · 特罗姆瑟', recSub:'极光同款 · 机票近 3 年最低'
+    },
+    hkd: {
+      img:'', name:'北海道 · 看雪', date:'2027.01.16 — 01.20 · 已成行',
+      stats:[['98','张照片'],['32','公里足迹'],['6','个地点'],['¥420','最贵一餐']],
+      foot:'3 个国家 · 12 座城市 · 本次点亮：日本',
+      recName:'猜你想去：阿勒泰 · 滑雪', recSub:'国内雪顶平替 · 12 月最佳'
+    }
+  };
+
+  function setArchive(k){
+    var a = ARCHIVES[k];
+    $('arc-hero').style.background = a.img ? '#0B2B4E' : 'linear-gradient(150deg,#1E3A8A,#60A5FA 60%,#DBEAFE)';
+    var im = $('arc-img');
+    if(a.img){ im.style.display = 'block'; im.src = a.img; } else { im.style.display = 'none'; }
+    $('arc-name').textContent = a.name;
+    $('arc-date').textContent = a.date;
+    $('stat-grid').innerHTML = a.stats.map(function(s){
+      return '<div class="stat-c"><div class="n">' + s[0] + '</div><div class="l">' + s[1] + '</div></div>';
+    }).join('');
+    $('arc-foot').textContent = a.foot;
+    $('arc-rec-name').textContent = a.recName;
+    $('arc-rec-sub').textContent = a.recSub;
+  }
+
+  function showPush(){
+    var p = $('push'); p.classList.add('show');
+    setTimeout(function(){ p.classList.remove('show'); }, 4200);
+  }
+
+  function openDetail(w){ setDetail(w || 'ice'); showScreen('screen-detail'); }
+
+  function bookNow(){
+    showToast('已锁定最优价，进入携程下单流程');
+    setTimeout(function(){ setArchive(lastBooking); showScreen('screen-archive'); }, 1400);
+  }
+
+  function showToast(msg){
+    var t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+</script>
+</body>
+</html>
